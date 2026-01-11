@@ -103,7 +103,7 @@ func downloadGitHubTarball(src *Source, hash string, destPath string, opts Downl
 	if err != nil {
 		return fmt.Errorf("failed to request tarball: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if opts.Verbose {
 		sdk.Info(fmt.Sprintf("Response status: %d", resp.StatusCode))
@@ -142,7 +142,7 @@ func downloadPublic(url string, destPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to download: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("download failed with status %d", resp.StatusCode)
@@ -163,7 +163,7 @@ func saveResponse(resp *http.Response, destPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Copy response body to file
 	_, err = io.Copy(file, resp.Body)
@@ -182,7 +182,7 @@ func CheckAccess(src *Source, token string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		return resp.StatusCode == http.StatusOK, nil
 	}
 
@@ -201,7 +201,7 @@ func CheckAccess(src *Source, token string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return resp.StatusCode == http.StatusOK, nil
 }

@@ -67,7 +67,7 @@ func LoadActions(destDir string) ([]Action, error) {
 	}
 
 	// Remove the degit.json file after loading
-	os.Remove(actionsPath)
+	_ = os.Remove(actionsPath)
 
 	return actions, nil
 }

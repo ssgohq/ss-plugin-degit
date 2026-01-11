@@ -143,7 +143,7 @@ func UpdateCache(cacheDir string, ref string, hash string) error {
 		// Clean up old tarball if no longer in use
 		if !hashInUse {
 			oldTarball := filepath.Join(cacheDir, oldHash+".tar.gz")
-			os.Remove(oldTarball) // Ignore errors
+			_ = os.Remove(oldTarball)
 		}
 	}
 
@@ -170,6 +170,22 @@ func GetCachedHash(cacheDir string, ref string) string {
 	return refMap[ref]
 }
 
+// UpdateCacheAccess updates only the access log (for git mode clones without tarballs)
+// This ensures repos cloned via git mode appear in interactive mode
+func UpdateCacheAccess(cacheDir string, ref string) error {
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		return err
+	}
+
+	accessLog, err := LoadAccessLog(cacheDir)
+	if err != nil {
+		accessLog = make(AccessLog)
+	}
+
+	accessLog[ref] = time.Now().UTC().Format(time.RFC3339)
+	return SaveAccessLog(cacheDir, accessLog)
+}
+
 // GetCachedRepos returns a list of all cached repository paths
 // Format: "site/owner/repo"
 func GetCachedRepos() []string {
@@ -177,7 +193,7 @@ func GetCachedRepos() []string {
 	var repos []string
 
 	// Walk through cache directory structure
-	filepath.Walk(cacheDir, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(cacheDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -208,7 +224,7 @@ func GetCachedReposByRecency() []string {
 
 	var repos []repoAccess
 
-	filepath.Walk(cacheDir, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(cacheDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}

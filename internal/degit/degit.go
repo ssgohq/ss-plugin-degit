@@ -45,8 +45,10 @@ func (d *Degit) Clone(src *Source, dest string) error {
 
 	// Clone based on mode
 	var err error
+	var usedGitMode bool
 	if d.options.Mode == "git" {
 		err = d.cloneWithGit(src, dest)
+		usedGitMode = true
 	} else {
 		err = d.cloneWithTar(src, dest, cacheDir)
 		// If tar mode fails, automatically try git mode as fallback
@@ -56,17 +58,26 @@ func (d *Degit) Clone(src *Source, dest string) error {
 				sdk.Info("Falling back to git clone mode...")
 			}
 			// Clean up any partial extraction
-			os.RemoveAll(dest)
+			_ = os.RemoveAll(dest)
 			gitErr := d.cloneWithGit(src, dest)
 			if gitErr != nil {
 				return fmt.Errorf("tarball download failed (%v) and git clone also failed (%v)", err, gitErr)
 			}
 			err = nil // Git clone succeeded
+			usedGitMode = true
 		}
 	}
 
 	if err != nil {
 		return err
+	}
+
+	// Track access for interactive mode (even for git mode clones)
+	if usedGitMode {
+		// Update cache access log so repo appears in interactive mode
+		if updateErr := UpdateCacheAccess(cacheDir, src.Ref); updateErr != nil && d.options.Verbose {
+			sdk.Warning(fmt.Sprintf("Failed to update cache access: %v", updateErr))
+		}
 	}
 
 	// Execute actions from degit.json if present
@@ -199,7 +210,7 @@ func (d *Degit) cloneWithGit(src *Source, dest string) error {
 		if d.options.Verbose {
 			sdk.Warning("HTTPS clone failed, trying SSH...")
 		}
-		os.RemoveAll(dest) // Clean up failed clone
+		_ = os.RemoveAll(dest) // Clean up failed clone
 
 		cmd = exec.Command("git", "clone", "--depth", "1", src.SSH, dest)
 		cmd.Stdout = os.Stdout
@@ -240,7 +251,7 @@ func (d *Degit) cloneWithGit(src *Source, dest string) error {
 		if err != nil {
 			return fmt.Errorf("failed to create temp directory: %w", err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		// Move subdirectory contents to temp
 		entries, err := os.ReadDir(subdir)
@@ -259,7 +270,7 @@ func (d *Degit) cloneWithGit(src *Source, dest string) error {
 		// Clear destination
 		entries, _ = os.ReadDir(dest)
 		for _, entry := range entries {
-			os.RemoveAll(filepath.Join(dest, entry.Name()))
+			_ = os.RemoveAll(filepath.Join(dest, entry.Name()))
 		}
 
 		// Move temp contents to destination

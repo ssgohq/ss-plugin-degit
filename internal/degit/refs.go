@@ -130,7 +130,7 @@ func fetchGitHubRepoInfo(src *Source) (*gitHubRepo, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to fetch repo info: %d", resp.StatusCode)
@@ -149,7 +149,7 @@ func fetchGitHubBranchInfo(src *Source, branch string) (*gitHubBranch, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to fetch branch info: %d", resp.StatusCode)
@@ -168,7 +168,7 @@ func fetchGitHubBranches(src *Source) ([]gitHubBranch, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to fetch branches: %d", resp.StatusCode)
@@ -187,7 +187,7 @@ func fetchGitHubTags(src *Source) ([]gitHubTag, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to fetch tags: %d", resp.StatusCode)
@@ -312,7 +312,10 @@ func ResolveRef(refs []Ref, refName string) (string, error) {
 // isHex checks if a string contains only hexadecimal characters
 func isHex(s string) bool {
 	for _, c := range s {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+		isDigit := c >= '0' && c <= '9'
+		isLowerHex := c >= 'a' && c <= 'f'
+		isUpperHex := c >= 'A' && c <= 'F'
+		if !isDigit && !isLowerHex && !isUpperHex {
 			return false
 		}
 	}

@@ -23,14 +23,14 @@ func ExtractTarball(tarballPath string, destDir string, opts ExtractOptions) err
 	if err != nil {
 		return fmt.Errorf("failed to open tarball: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Create gzip reader
 	gzReader, err := gzip.NewReader(file)
 	if err != nil {
 		return fmt.Errorf("failed to create gzip reader: %w", err)
 	}
-	defer gzReader.Close()
+	defer func() { _ = gzReader.Close() }()
 
 	// Create tar reader
 	tarReader := tar.NewReader(gzReader)
@@ -155,7 +155,7 @@ func extractFile(reader io.Reader, destPath string, mode int64) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Copy file contents
 	_, err = io.Copy(file, reader)
